@@ -1,0 +1,19 @@
+# FastAPI & Uvicorn
+fastapi
+uvicorn[standard]
+
+# SQLAlchemy (for ORM)
+sqlalchemy
+psycopg2-binary # PostgreSQL driver
+
+# Passlib for password hashing
+passlib[bcrypt]
+
+# Python-JOSE for JWT
+python-jose[cryptography]
+
+# Pydantic for data validation (comes with FastAPI, but good to list)
+pydantic
+
+# For .env file
+python-dotenv

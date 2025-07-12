@@ -1,0 +1,16 @@
+/* Basic Reset */
+body, h1, p {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  direction: rtl; /* Default direction to RTL */
+  font-family: 'Tahoma', sans-serif; /* A common Persian-compatible font */
+  line-height: 1.6;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Add more global styles later */
