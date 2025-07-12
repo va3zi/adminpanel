@@ -1,7 +1,4 @@
-import axios from 'axios'; // We'll create a dedicated API service later, but for now direct axios use
-
-// Define the base URL for your API. This should ideally come from an env variable.
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1'; // Adjust if your backend runs elsewhere
+import apiClient from '../../services/apiClient'; // Import the centralized client
 
 const state = {
   token: localStorage.getItem('superadmin_token') || null, // Or a more generic 'auth_token'
@@ -52,7 +49,8 @@ const actions = {
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
 
-      const response = await axios.post(`${API_BASE_URL}/superadmin/login/token`, formData, {
+      // Use the apiClient which has the base URL pre-configured
+      const response = await apiClient.post(`/superadmin/login/token`, formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -75,9 +73,8 @@ const actions = {
     const currentToken = tokenToUse || state.token;
     if (!currentToken) return Promise.reject("No token available for fetchSuperAdminMe");
     try {
-      const response = await axios.get(`${API_BASE_URL}/superadmin/me`, {
-        headers: { Authorization: `Bearer ${currentToken}` }
-      });
+      // The interceptor in apiClient will add the token header automatically
+      const response = await apiClient.get(`/superadmin/me`);
       commit('SET_USER', { userInfo: response.data, userType: 'superadmin' });
       return Promise.resolve(response.data);
     } catch (error) {
@@ -112,11 +109,6 @@ const actions = {
     // Add similar logic for 'admin' role when implemented
   }
 
-  // TODO: Add Admin login/logout/fetchMe actions when that part is built
-  /*
-  async loginAdmin({ commit, dispatch }, credentials) { ... }
-  async fetchAdminMe({ commit, state }, tokenToUse) { ... }
-  */
 };
 
 export default {

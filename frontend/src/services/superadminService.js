@@ -1,33 +1,4 @@
-import axios from 'axios';
-import store from '../store'; // To get auth token
-
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
-
-// Function to get the auth headers
-const getAuthHeaders = () => {
-  const token = store.getters['auth/token']; // Assuming token is stored directly under auth module
-  if (token) {
-    return { Authorization: `Bearer ${token}` };
-  }
-  return {};
-};
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  // headers: { // Headers will be added per request to ensure freshness
-  //   'Content-Type': 'application/json', // Default, can be overridden
-  // },
-});
-
-// Add a request interceptor to include the token dynamically
-apiClient.interceptors.request.use(config => {
-  const headers = getAuthHeaders();
-  config.headers = { ...config.headers, ...headers };
-  return config;
-}, error => {
-  return Promise.reject(error);
-});
-
+import apiClient from './apiClient';
 
 export default {
   // Admins Management

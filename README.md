@@ -28,7 +28,37 @@ This project is a comprehensive, modern, responsive, RTL, and Persian-language V
 *   **Key Python Libraries:** Uvicorn, Pydantic, Passlib, Python-JOSE
 *   **Key Frontend Libraries:** Vue, Vuex, Vue-Router, Axios
 
-## Prerequisites
+## Installation
+
+There are two methods to install the VPN Admin Panel:
+
+1.  **Automatic Installation (Recommended):** A script is provided to automate the setup on a fresh Debian-based (e.g., Ubuntu 22.04) server.
+2.  **Manual Installation:** For custom setups or non-Debian systems, follow the manual steps.
+
+### Automatic Installation
+
+The `install.sh` script will:
+- Install all required dependencies (Docker, Nginx, Python, Node.js).
+- Set up a PostgreSQL database in a Docker container.
+- Configure and build the backend and frontend.
+- Set up Nginx as a reverse proxy with a free SSL certificate from Let's Encrypt.
+- Create a `systemd` service to run the backend automatically.
+
+**To run the automatic installer:**
+
+1.  SSH into your fresh Debian-based server as root.
+2.  Download and run the script:
+    ```bash
+    wget https://raw.githubusercontent.com/Gozargah/Marzban-panel/master/install.sh
+    chmod +x install.sh
+    sudo bash ./install.sh
+    ```
+    *(Note: The URL should be updated to the correct raw script URL upon final merge).*
+2.  Follow the on-screen prompts to provide your domain name, passwords, and API keys.
+
+### Manual Installation
+
+#### Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -207,6 +237,44 @@ Before you begin, ensure you have the following installed:
 *   **`npm ERR!` (Frontend):** Ensure Node.js and npm are correctly installed. Try deleting `node_modules` and `package-lock.json` (or `yarn.lock`) and run `npm install` (or `yarn install`) again.
 *   **CORS Issues:** If the frontend has trouble communicating with the backend, it might be a CORS (Cross-Origin Resource Sharing) issue. FastAPI is configured with basic CORS middleware in Phase 1 for development (allowing all origins, methods, headers). For production, this needs to be configured more restrictively.
 
+## Automated Testing
+
+This project includes a basic setup for automated backend and frontend testing.
+
+### Backend Testing (Pytest)
+
+1.  **Install Development Dependencies:**
+    Make sure you have installed the testing libraries from `requirements-dev.txt`:
+    ```bash
+    # From the 'backend' directory, with your virtual environment active
+    pip install -r requirements-dev.txt
+    ```
+
+2.  **Run Tests:**
+    To run the backend tests, execute `pytest` from the `backend` directory:
+    ```bash
+    # From the 'backend' directory
+    pytest
+    ```
+    This will discover and run all tests in the `backend/tests/` directory.
+
+### Frontend Testing (Jest & Vue Test Utils)
+
+1.  **Install Development Dependencies:**
+    The testing libraries are included in `devDependencies` in `package.json`. Ensure they are installed:
+    ```bash
+    # From the 'frontend' directory
+    npm install
+    ```
+
+2.  **Run Tests:**
+    To run the frontend component tests, use the npm script:
+    ```bash
+    # From the 'frontend' directory
+    npm test:unit
+    ```
+    This will execute all `.spec.js` files in the `frontend/tests/unit/` directory.
+
 ## Further Development (Next Phases Outline)
 
 *   **Phase 2: Admin Panel - Core Features & SuperAdmin UI Completion**
@@ -216,6 +284,29 @@ Before you begin, ensure you have the following installed:
     *   Admin-facing UI for VPN user management.
 *   **Phase 3: Payment Integration (Zarinpal) & Abresani Integration**
 *   **Phase 4: UI Polish, Testing & Deployment Prep**
+
+## Deployment Notes (High-Level)
+
+A full production deployment requires careful consideration of security, performance, and reliability. Here are some high-level steps:
+
+### Backend
+
+1.  **Database:** Use a managed PostgreSQL service or a robust, backed-up PostgreSQL server. Do not use the development setup.
+2.  **Migrations:** Use a migration tool like `Alembic` to manage database schema changes instead of `Base.metadata.create_all`.
+3.  **Application Server:** Run the FastAPI app using a production-grade ASGI server like `Gunicorn` with `Uvicorn` workers. Example: `gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app`.
+4.  **Web Server (Reverse Proxy):** Use a web server like `Nginx` in front of Gunicorn to handle incoming requests, manage SSL/TLS termination, and serve static files efficiently.
+5.  **Environment Variables:** Do not commit your `.env` file. Use a secure method for managing production secrets (e.g., environment variables set by the hosting provider, a secret management service).
+6.  **CORS:** Restrict CORS origins in the FastAPI settings to only allow your frontend's domain.
+
+### Frontend
+
+1.  **Build for Production:**
+    ```bash
+    # From the 'frontend' directory
+    npm run build
+    ```
+    This command will create a `dist/` directory with optimized, minified static files (HTML, CSS, JS).
+2.  **Serving:** These static files should be served by a web server like `Nginx`. Configure Nginx to serve `index.html` for all routes that are part of the Vue app to enable history mode routing.
 
 ---
 
