@@ -17,3 +17,6 @@ pydantic
 
 # For .env file
 python-dotenv
+
+# For making HTTP requests (e.g., to Marzban API)
+httpx

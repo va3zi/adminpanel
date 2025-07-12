@@ -10,8 +10,14 @@ import SAManageAdmins from '../views/superadmin/dashboard_children/SAManageAdmin
 import SAManagePlans from '../views/superadmin/dashboard_children/SAManagePlans.vue';
 
 // Admin views (Import later)
-// import AdminLoginView from '../views/admin/AdminLoginView.vue'
-// import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
+import AdminLoginView from '../views/admin/AdminLoginView.vue';
+import AdminDashboardView from '../views/admin/AdminDashboardView.vue';
+// Admin Dashboard Children
+import AdminDashboardHome from '../views/admin/dashboard_children/AdminDashboardHome.vue';
+import AdminViewPlans from '../views/admin/dashboard_children/AdminViewPlans.vue';
+import AdminManageUsers from '../views/admin/dashboard_children/AdminManageUsers.vue';
+import AdminRecharge from '../views/admin/dashboard_children/AdminRecharge.vue';
+
 
 // General Views
 import NotFoundView from '../views/NotFoundView.vue';
@@ -82,6 +88,44 @@ const routes = [
   //   component: AdminDashboardView,
   //   meta: { requiresAuth: true, userType: 'admin' }
   // },
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: AdminLoginView,
+    meta: { requiresGuest: true, userType: 'admin' }
+  },
+  {
+    path: '/admin/dashboard',
+    component: AdminDashboardView,
+    meta: { requiresAuth: true, userType: 'admin' },
+    children: [
+      {
+        path: '',
+        name: 'AdminDashboard', // Default child for /admin/dashboard
+        redirect: { name: 'AdminDashboardHome' }
+      },
+      {
+        path: 'home',
+        name: 'AdminDashboardHome',
+        component: AdminDashboardHome
+      },
+      {
+        path: 'plans',
+        name: 'AdminViewPlans',
+        component: AdminViewPlans
+      },
+      {
+        path: 'users',
+        name: 'AdminManageUsers',
+        component: AdminManageUsers
+      },
+      {
+        path: 'recharge',
+        name: 'AdminRecharge',
+        component: AdminRecharge
+      }
+    ]
+  },
   // Add a catch-all route for 404
   {
     path: '/:catchAll(.*)*',

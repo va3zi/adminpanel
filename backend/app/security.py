@@ -57,7 +57,7 @@ from .database import get_db # Assuming get_db is in database.py
 oauth2_scheme_super_admin = OAuth2PasswordBearer(tokenUrl="/api/v1/superadmin/login/token")
 
 # Placeholder for OAuth2PasswordBearer for regular Admin (will be defined later)
-# oauth2_scheme_admin = OAuth2PasswordBearer(tokenUrl="/api/v1/admin/login/token")
+oauth2_scheme_admin = OAuth2PasswordBearer(tokenUrl="/api/v1/admin/login/token") # Defined Admin token URL
 
 
 async def get_current_super_admin(
@@ -81,22 +81,31 @@ async def get_current_super_admin(
 
 
 # Placeholder for get_current_admin (similar to above but for Admin model)
-# async def get_current_admin(
-#     token: str = Depends(oauth2_scheme_admin),
-#     db: Session = Depends(get_db)
-# ) -> models.Admin:
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials for Admin",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-#     token_data = decode_access_token(token)
-#     if token_data is None or token_data.username is None:
-#         raise credentials_exception
-#     user = db.query(models.Admin).filter(models.Admin.username == token_data.username).first()
-#     if user is None or not user.is_active: # Ensure admin is active
-#         raise credentials_exception
-#     return user
+async def get_current_admin(
+    token: str = Depends(oauth2_scheme_admin), # Use the admin-specific scheme
+    db: Session = Depends(get_db)
+) -> models.Admin:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials for Admin",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    token_data = decode_access_token(token)
+    if token_data is None or token_data.username is None:
+        raise credentials_exception
+
+    # Verify token type if you add it to the token data during creation
+    # For example, if payload includes "type": "admin"
+    # if token_data.get("type") != "admin":
+    #     raise credentials_exception
+
+    user = db.query(models.Admin).filter(models.Admin.username == token_data.username).first()
+
+    if user is None:
+        raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive admin user")
+    return user
 
 
 class RoleChecker:

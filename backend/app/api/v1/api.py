@@ -1,15 +1,16 @@
 from fastapi import APIRouter
 
-# Import endpoint modules here
-# from .endpoints import items, users # Example
-from .endpoints import superadmin_auth, admins, plans # Will create these files next
+# Import endpoint modules
+from .endpoints import superadmin_auth, admins, plans, admin_auth, admin_features
 
 api_router_v1 = APIRouter()
 
-# Include routers from endpoint modules
-# api_router_v1.include_router(items.router, prefix="/items", tags=["items"])
-# api_router_v1.include_router(users.router, prefix="/users", tags=["users"])
-
+# SuperAdmin Endpoints
 api_router_v1.include_router(superadmin_auth.router, prefix="/superadmin", tags=["SuperAdmin Auth"])
-api_router_v1.include_router(admins.router, prefix="/admins", tags=["Admins Management (SuperAdmin)"])
-api_router_v1.include_router(plans.router, prefix="/plans", tags=["Plans Management (SuperAdmin)"])
+api_router_v1.include_router(admins.router, prefix="/admins", tags=["SuperAdmin - Admins Management"])
+api_router_v1.include_router(plans.router, prefix="/plans", tags=["SuperAdmin - Plans Management"]) # This is for SA to manage all plans
+
+# Admin Endpoints
+api_router_v1.include_router(admin_auth.router, prefix="/admin", tags=["Admin Auth"])
+api_router_v1.include_router(admin_features.router, prefix="/admin", tags=["Admin Features"]) # e.g., viewing active plans for themselves
+api_router_v1.include_router(vpn_users.router, prefix="/admin", tags=["Admin - VPN User Management"]) # Added VPN users router under /admin
