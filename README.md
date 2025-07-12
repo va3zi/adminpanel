@@ -24,8 +24,8 @@ This project is a comprehensive, modern, responsive, RTL, and Persian-language V
 
 *   **Backend:** Python, FastAPI, SQLAlchemy (with PostgreSQL)
 *   **Frontend:** Vue.js (Vue 3), Vuex, Vue Router, Axios
-*   **Database:** PostgreSQL
-*   **Key Python Libraries:** Uvicorn, Pydantic, Passlib, Python-JOSE
+*   **Database:** MySQL (MariaDB)
+*   **Key Python Libraries:** Uvicorn, Pydantic, Passlib, Python-JOSE, PyMySQL
 *   **Key Frontend Libraries:** Vue, Vuex, Vue-Router, Axios
 
 ## Installation
@@ -66,7 +66,7 @@ Before you begin, ensure you have the following installed:
 *   **Pip:** Python package installer (usually comes with Python)
 *   **Virtualenv (recommended):** For creating isolated Python environments (`pip install virtualenv`)
 *   **Node.js:** Version 16.x or higher (which includes npm)
-*   **PostgreSQL:** A running PostgreSQL server instance (Version 12+ recommended)
+*   **MySQL/MariaDB:** A running server instance. For the automated installer, Docker is used to run MariaDB.
 *   **Git:** For cloning the repository
 
 ## Project Structure
@@ -112,19 +112,18 @@ Before you begin, ensure you have the following installed:
     pip install -r requirements.txt
     ```
 
-5.  **Setup PostgreSQL Database:**
-    *   Ensure PostgreSQL is installed and running.
-    *   Create a new database, for example, `vpnadmin_db`.
+5.  **Setup MySQL/MariaDB Database:**
+    *   Ensure MySQL or MariaDB is installed and running.
+    *   Create a new database, for example, `vpnpanel_db`.
         ```sql
-        -- Example PSQL commands:
-        CREATE DATABASE vpnadmin_db;
+        -- Example MySQL commands:
+        CREATE DATABASE vpnpanel_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
         ```
-    *   Create a new user (role) with a password that has privileges on this database.
+    *   Create a new user with a password that has privileges on this database.
         ```sql
-        CREATE USER vpnadmin_user WITH PASSWORD 'your_strong_password_here';
-        ALTER DATABASE vpnadmin_db OWNER TO vpnadmin_user;
-        -- Grant privileges (might need more specific grants depending on setup)
-        GRANT ALL PRIVILEGES ON DATABASE vpnadmin_db TO vpnadmin_user;
+        CREATE USER 'vpnpanel_user'@'localhost' IDENTIFIED BY 'your_strong_password_here';
+        GRANT ALL PRIVILEGES ON vpnpanel_db.* TO 'vpnpanel_user'@'localhost';
+        FLUSH PRIVILEGES;
         ```
         *Note: For security, grant only necessary privileges in a production environment.*
 
@@ -134,9 +133,9 @@ Before you begin, ensure you have the following installed:
         cp .env.example .env
         ```
     *   Edit the `.env` file with your actual settings:
-        *   `DATABASE_URL`: Set this to your PostgreSQL connection string.
-            *   Format: `postgresql://vpnadmin_user:your_strong_password_here@localhost:5432/vpnadmin_db`
-            *   Adjust `localhost`, `5432` (port), username, password, and database name as per your setup.
+        *   `DATABASE_URL`: Set this to your MySQL connection string.
+            *   Format: `mysql+pymysql://vpnpanel_user:your_strong_password_here@localhost:3306/vpnpanel_db`
+            *   Adjust `localhost`, `3306` (port), username, password, and database name as per your setup.
         *   `SECRET_KEY`: **Important!** Generate a strong secret key for JWT. You can use `openssl rand -hex 32` to generate one.
         *   `MARZBAN_API_BASE_URL`: The base URL for the live Marzban instance. For this project, it is `https://panel.abresani.com`.
         *   `MARZBAN_SUDO_USERNAME`: The admin username for the Marzban (Abresani) panel.
@@ -229,10 +228,10 @@ Before you begin, ensure you have the following installed:
 
 *   **Port Conflicts:** If port `8000` (backend) or `8080` (frontend) is in use, Uvicorn or Vue CLI will usually indicate this. You can change the port in the run commands (e.g., `uvicorn ... --port 8001`, `npm run serve -- --port 8081`).
 *   **Database Connection Issues:**
-    *   Ensure your PostgreSQL server is running.
+    *   Ensure your MySQL/MariaDB server is running.
     *   Double-check the `DATABASE_URL` in `backend/.env` for typos, correct credentials, host, port, and database name.
     *   Verify that the database user has the necessary permissions.
-    *   Check PostgreSQL logs for any connection errors.
+    *   Check MySQL/MariaDB logs for any connection errors.
 *   **`ModuleNotFoundError` (Python):** Ensure your virtual environment is activated and you've run `pip install -r requirements.txt`.
 *   **`npm ERR!` (Frontend):** Ensure Node.js and npm are correctly installed. Try deleting `node_modules` and `package-lock.json` (or `yarn.lock`) and run `npm install` (or `yarn install`) again.
 *   **CORS Issues:** If the frontend has trouble communicating with the backend, it might be a CORS (Cross-Origin Resource Sharing) issue. FastAPI is configured with basic CORS middleware in Phase 1 for development (allowing all origins, methods, headers). For production, this needs to be configured more restrictively.
@@ -291,7 +290,7 @@ A full production deployment requires careful consideration of security, perform
 
 ### Backend
 
-1.  **Database:** Use a managed PostgreSQL service or a robust, backed-up PostgreSQL server. Do not use the development setup.
+1.  **Database:** Use a managed MySQL/MariaDB service or a robust, backed-up server. Do not use the development setup.
 2.  **Migrations:** Use a migration tool like `Alembic` to manage database schema changes instead of `Base.metadata.create_all`.
 3.  **Application Server:** Run the FastAPI app using a production-grade ASGI server like `Gunicorn` with `Uvicorn` workers. Example: `gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app`.
 4.  **Web Server (Reverse Proxy):** Use a web server like `Nginx` in front of Gunicorn to handle incoming requests, manage SSL/TLS termination, and serve static files efficiently.

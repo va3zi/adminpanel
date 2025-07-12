@@ -4,7 +4,7 @@ uvicorn[standard]
 
 # SQLAlchemy (for ORM)
 sqlalchemy
-psycopg2-binary # PostgreSQL driver
+PyMySQL # MySQL driver
 
 # Passlib for password hashing
 passlib[bcrypt]
