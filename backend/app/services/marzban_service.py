@@ -2,17 +2,17 @@ import httpx
 import os
 from dotenv import load_dotenv
 from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
+import time
 
 load_dotenv()
 
 MARZBAN_API_BASE_URL = os.getenv("MARZBAN_API_BASE_URL")
 MARZBAN_SUDO_USERNAME = os.getenv("MARZBAN_SUDO_USERNAME")
 MARZBAN_SUDO_PASSWORD = os.getenv("MARZBAN_SUDO_PASSWORD")
-# MARZBAN_API_TOKEN = os.getenv("MARZBAN_API_TOKEN") # If using a direct token
 
-# Placeholder for storing the auth token obtained from Marzban
-# In a real app, this token management would need to be more robust (e.g., refresh, expiry handling)
-_marzban_auth_token: Optional[str] = None
+# This will store the token and its expiry time
+_auth_cache: Dict[str, Any] = {"token": None, "expires_at": 0}
 
 class MarzbanAPIError(Exception):
     """Custom exception for Marzban API errors."""
@@ -23,46 +23,55 @@ class MarzbanAPIError(Exception):
 
 async def _get_marzban_auth_token() -> Optional[str]:
     """
-    Authenticates with Marzban API and retrieves a token.
-    This is a placeholder and needs to be adapted to Marzban's actual auth endpoint.
-    Marzban's /api/admin/token endpoint is likely what's needed.
+    Authenticates with Marzban API and retrieves a token, caching it until it expires.
+    The actual endpoint is /api/admin/token.
     """
-    global _marzban_auth_token
-    if _marzban_auth_token: # Basic caching, would need expiry check in real app
-        # TODO: Add token expiry check and re-login if expired
-        return _marzban_auth_token
+    global _auth_cache
+
+    # Check if token exists and is not expired (with a 60-second buffer)
+    if _auth_cache["token"] and _auth_cache["expires_at"] > time.time() + 60:
+        return _auth_cache["token"]
 
     if not MARZBAN_API_BASE_URL or not MARZBAN_SUDO_USERNAME or not MARZBAN_SUDO_PASSWORD:
         print("Marzban API credentials or URL not configured.")
-        # raise MarzbanAPIError(500, "Marzban service not configured")
-        return None # Silently fail for now if not configured during dev
+        return None
 
-    # Assuming Marzban has an endpoint like /api/admin/token for sudo users (common in FastAPI apps)
-    auth_url = f"{MARZBAN_API_BASE_URL.rstrip('/')}/admin/token"
+    # Correct endpoint from openapi.json
+    auth_url = f"{MARZBAN_API_BASE_URL.rstrip('/')}/api/admin/token"
 
     async with httpx.AsyncClient() as client:
         try:
-            # Marzban uses OAuth2PasswordRequestForm for its /api/admin/token
             response = await client.post(
                 auth_url,
                 data={"username": MARZBAN_SUDO_USERNAME, "password": MARZBAN_SUDO_PASSWORD},
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
-            response.raise_for_status() # Raise an exception for HTTP error codes
+            response.raise_for_status()
             token_data = response.json()
-            _marzban_auth_token = token_data.get("access_token")
-            if not _marzban_auth_token:
+
+            access_token = token_data.get("access_token")
+            if not access_token:
                 print("Failed to retrieve access_token from Marzban auth response.")
+                _auth_cache = {"token": None, "expires_at": 0}
                 return None
+
+            # Cache the token and set an expiry time.
+            # Marzban's JWT_ACCESS_TOKEN_EXPIRE_MINUTES defaults to 1440 (24 hours).
+            # Let's assume this and cache it.
+            # A more robust solution would decode the JWT to get the 'exp' claim.
+            token_lifetime_seconds = int(os.getenv("MARZBAN_TOKEN_LIFETIME_MINUTES", 1440)) * 60
+            _auth_cache["token"] = access_token
+            _auth_cache["expires_at"] = time.time() + token_lifetime_seconds
+
             print("Successfully authenticated with Marzban and obtained token.")
-            return _marzban_auth_token
+            return access_token
         except httpx.HTTPStatusError as e:
             print(f"Marzban authentication HTTP error: {e.response.status_code} - {e.response.text}")
-            # raise MarzbanAPIError(e.response.status_code, e.response.json()) from e
+            _auth_cache = {"token": None, "expires_at": 0} # Clear cache on failure
             return None
         except Exception as e:
             print(f"Error during Marzban authentication: {e}")
-            # raise MarzbanAPIError(500, str(e)) from e
+            _auth_cache = {"token": None, "expires_at": 0}
             return None
 
 async def _make_marzban_request(
@@ -79,207 +88,109 @@ async def _make_marzban_request(
     if not MARZBAN_API_BASE_URL:
          raise MarzbanAPIError(500, "Marzban API base URL not configured.")
 
-    url = f"{MARZBAN_API_BASE_URL.rstrip('/')}/{endpoint.lstrip('/')}"
-    headers = {"Authorization": f"Bearer {token}"}
+    # Construct URL with /api/ prefix
+    url = f"{MARZBAN_API_BASE_URL.rstrip('/')}/api/{endpoint.lstrip('/')}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=20.0) as client:
         try:
             response = await client.request(method, url, json=json_data, params=params, headers=headers)
             response.raise_for_status()
+            # For DELETE requests with no content
+            if response.status_code == 200 and not response.content:
+                return {"status": "success"}
             return response.json()
         except httpx.HTTPStatusError as e:
             print(f"Marzban API request error to {url}: {e.response.status_code} - {e.response.text}")
-            raise MarzbanAPIError(e.response.status_code, e.response.json() if e.response.content else e.response.text) from e
+            detail = e.response.json() if e.response.content else e.response.text
+            raise MarzbanAPIError(e.response.status_code, detail) from e
         except Exception as e:
             print(f"Generic error during Marzban API request to {url}: {e}")
             raise MarzbanAPIError(500, str(e)) from e
 
-# --- Placeholder User Management Functions ---
-# These need to be verified and implemented based on actual Marzban API docs.
-
-async def get_marzban_users(skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
-    """
-    Placeholder: Get a list of users from Marzban.
-    Marzban API endpoint: /api/users
-    """
-    # TODO: Verify Marzban endpoint and parameters
-    return await _make_marzban_request("GET", "users", params={"offset": skip, "limit": limit}) # Marzban uses offset/limit
+# --- Implemented User Management Functions ---
 
 async def add_marzban_user(username: str, data_limit_gb: float, duration_days: int) -> Dict[str, Any]:
     """
-    Placeholder: Add a new user to Marzban.
-    Marzban API endpoint: /api/user
-    Converts GB to bytes and days to timestamp for Marzban.
+    Add a new user to Marzban.
+    Endpoint: POST /api/user
     """
-    # TODO: Verify Marzban endpoint and request payload structure.
-    # Marzban expects data_limit in bytes and expire as a timestamp (seconds from epoch).
-    # Marzban user creation payload example from its source:
-    # {
-    #   "username": "string",
-    #   "proxies": { "vmess": {"id": "uuid string"} ... }, // Define which proxy types
-    #   "inbounds": null, // Optional: specify inbounds for specific protocols
-    #   "expire": 0, // Timestamp in seconds, 0 for no limit
-    #   "data_limit": 0, // Bytes, 0 for no limit
-    #   "data_limit_reset_strategy": "no_reset" // e.g., "no_reset", "daily", "weekly", "monthly"
-    #   "status": "active" // "active", "disabled", "limited", "expired"
-    #   "note": "string"
-    #   "sub_updated_at": null
-    #   "sub_last_user_agent": null
-    #   "online_at": null
-    #   "on_hold_expire_duration": 0 // if user on_hold
-    #   "on_hold_data_limit": 0 // if user on_hold
-    # }
-    # We need to define default proxies. For now, let's assume VMess is standard.
-    # This needs to be configurable or based on the plan.
-
-    from datetime import datetime, timedelta
-
     expire_timestamp = 0
     if duration_days > 0:
-        expire_date = datetime.utcnow() + timedelta(days=duration_days)
-        expire_timestamp = int(expire_date.timestamp())
+        # Marzban expects a timestamp, not a duration from now.
+        expire_timestamp = int((datetime.utcnow() + timedelta(days=duration_days)).timestamp())
 
     data_limit_bytes = 0
     if data_limit_gb > 0:
         data_limit_bytes = int(data_limit_gb * 1024 * 1024 * 1024)
 
+    # Based on UserCreate schema in openapi.json
     payload = {
         "username": username,
-        "proxies": {"vmess": {}}, # Simplistic default, assuming Marzban auto-configures details
-        # "expire": expire_timestamp, # This might be set via subscription or node settings in Marzban
-        # "data_limit": data_limit_bytes, # This might be set via subscription or node settings
-        # For our panel, we'll likely manage these via the subscription settings for the user.
-        # The core user creation might be simpler, and then we apply plan settings.
-        # Let's assume for now user creation is just username + proxies,
-        # and plan parameters (limit, expiry) are applied when getting subscription link or by Marzban itself.
-        # This part is CRITICAL and needs actual Marzban API docs.
-        #
-        # Based on Marzban CLI user_add:
-        # It seems `data_limit` and `expire` ARE part of the user creation.
-        # `proxies` need to be specified.
-    }
-    # This is a simplified payload for now. A real one would need to specify proxy settings.
-    # The Marzban API for creating user is POST /api/user
-    # It seems the actual data limit and expiry are set when user is added to a node or via subscription settings.
-    # For direct user creation:
-    user_data = {
-        "username": username,
-        "proxies": {"vmess": {}}, # Example, this needs to be configured based on actual Marzban setup
-        "data_limit": data_limit_bytes,
+        "proxies": {
+            "vmess": {},
+            "vless": {}
+            # Add other protocols if needed, empty object creates default settings.
+        },
         "expire": expire_timestamp,
-        "status": "active",
-        # "data_limit_reset_strategy": "no_reset", # This is a common default
+        "data_limit": data_limit_bytes,
+        "data_limit_reset_strategy": "no_reset"
     }
-    return await _make_marzban_request("POST", "user", json_data=user_data)
-
+    return await _make_marzban_request("POST", "user", json_data=payload)
 
 async def get_marzban_user_details(username: str) -> Dict[str, Any]:
     """
-    Placeholder: Get details for a specific user from Marzban.
-    Marzban API endpoint: /api/user/{username}
+    Get details for a specific user from Marzban.
+    Endpoint: GET /api/user/{username}
     """
-    # TODO: Verify Marzban endpoint
     return await _make_marzban_request("GET", f"user/{username}")
 
 async def delete_marzban_user(username: str) -> Dict[str, Any]:
     """
-    Placeholder: Delete a user from Marzban.
-    Marzban API endpoint: /api/user/{username}
+    Delete a user from Marzban.
+    Endpoint: DELETE /api/user/{username}
     """
-    # TODO: Verify Marzban endpoint
     return await _make_marzban_request("DELETE", f"user/{username}")
 
+async def reset_marzban_user_traffic(username: str) -> Dict[str, Any]:
+    """
+    Reset a user's data usage in Marzban.
+    Endpoint: POST /api/user/{username}/reset
+    """
+    return await _make_marzban_request("POST", f"user/{username}/reset")
+
+async def get_all_marzban_users(offset: int = 0, limit: int = 100) -> Dict[str, Any]:
+    """
+    Get a list of all users from Marzban.
+    Endpoint: GET /api/users
+    """
+    return await _make_marzban_request("GET", "users", params={"offset": offset, "limit": limit})
+
+# We don't need a separate subscription URL function, as it's part of the UserResponse schema
+# fetched by get_marzban_user_details.
+# The same goes for raw links.
+
+# The modify_marzban_user function can be implemented if needed, but it's more complex
+# as it requires sending the full UserModify payload. For now, reset is sufficient.
 async def modify_marzban_user(username: str, modifications: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Placeholder: Modify a user in Marzban (e.g., reset traffic, change status).
-    Marzban API endpoint: /api/user/{username} (PUT or PATCH)
-    To reset traffic: set "used_traffic" to 0.
-    Other modifiable fields: status, expire, data_limit, proxies etc.
+    Modify a user in Marzban.
+    Endpoint: PUT /api/user/{username}
+    NOTE: This is a full update. `modifications` should be a valid UserModify payload.
     """
-    # TODO: Verify Marzban endpoint and payload for modifications.
-    # Example for resetting traffic: modifications = {"used_traffic": 0}
-    # Marzban API seems to use PUT for user modification: PUT /api/user/{username}
-    # The body should contain all fields of the user, not just the modified ones.
-    # So, first GET the user, then modify, then PUT.
+    # This function is more complex than just sending the modifications,
+    # as the PUT endpoint might expect the full object.
+    # The current panel logic doesn't require a general modify endpoint yet.
+    # If it were to be implemented, it would look something like this:
     #
-    # Simpler: Marzban has a specific reset endpoint: POST /api/user/{username}/reset
-    if modifications.get("reset_traffic"): # Special handling for reset
-        return await _make_marzban_request("POST", f"user/{username}/reset")
-
-    # For other modifications, you'd typically fetch the user, update fields, then PUT.
-    # This is complex, let's assume for now only reset is implemented via this service.
-    # A full update would look like:
-    # current_user_data = await get_marzban_user_details(username)
-    # updated_user_data = {**current_user_data, **modifications}
-    # return await _make_marzban_request("PUT", f"user/{username}", json_data=updated_user_data)
-    raise NotImplementedError("General user modification not fully implemented yet, only traffic reset.")
-
-
-async def get_marzban_user_subscription_url(username: str) -> Optional[str]:
-    """
-    Placeholder: Get the subscription URL for a user.
-    This might be part of the user details or a separate endpoint.
-    Marzban's user object contains `subscription_url`.
-    """
-    user_details = await get_marzban_user_details(username)
-    return user_details.get("subscription_url")
-
-async def get_marzban_user_qr_code_url(username: str) -> Optional[str]:
-    """
-    Placeholder: Get a URL to the QR code image for the user's subscription.
-    Marzban dashboard usually generates this. If API provides it directly, great.
-    Otherwise, we might need to construct it or use a library if it's just the sub link.
-    Marzban's user object contains `links` which are the raw proxy links.
-    The main subscription_url is usually preferred for client compatibility.
-    QR codes are typically generated client-side from the subscription_url.
-    """
-    # For now, let's assume the subscription URL is what we primarily need.
-    # The frontend can generate a QR code from this URL.
-    return await get_marzban_user_subscription_url(username)
-
-
-# Test function (optional, for direct testing of this service file)
-async def main_test():
-    print("Attempting to authenticate with Marzban...")
-    token = await _get_marzban_auth_token()
-    if token:
-        print(f"Auth token obtained: {token[:20]}...")
-        try:
-            print("\nAttempting to get users...")
-            users = await get_marzban_users(limit=5)
-            print(f"Found users: {users}")
-
-            # Example: Add a user (ensure this username doesn't conflict or is testable)
-            # print("\nAttempting to add a test user...")
-            # new_user = await add_marzban_user("testserviceuser123", 1, 30)
-            # print(f"New user created: {new_user}")
-            # test_username = new_user.get("username")
-
-            # if test_username:
-            #     print(f"\nAttempting to get details for {test_username}...")
-            #     details = await get_marzban_user_details(test_username)
-            #     print(f"Details: {details}")
-
-            #     print(f"\nAttempting to reset traffic for {test_username}...")
-            #     reset_info = await modify_marzban_user(test_username, {"reset_traffic": True})
-            #     print(f"Reset info: {reset_info}")
-
-            #     print(f"\nAttempting to get subscription URL for {test_username}...")
-            #     sub_url = await get_marzban_user_subscription_url(test_username)
-            #     print(f"Subscription URL: {sub_url}")
-
-            #     print(f"\nAttempting to delete {test_username}...")
-            #     delete_info = await delete_marzban_user(test_username)
-            #     print(f"Delete info: {delete_info}")
-
-        except MarzbanAPIError as e:
-            print(f"Marzban API Error during test operations: {e.status_code} - {e.detail}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-    else:
-        print("Could not obtain Marzban auth token. Ensure .env is configured correctly and Marzban is running.")
-
-if __name__ == "__main__":
-    # This allows running `python -m app.services.marzban_service` from `backend` directory
-    import asyncio
-    asyncio.run(main_test())
+    # current_details = await get_marzban_user_details(username)
+    # # The UserModify schema has many nullable fields.
+    # # We can construct a payload with just the changes.
+    # payload = {
+    #     "status": modifications.get("status"),
+    #     "expire": modifications.get("expire"),
+    #     ...
+    # }
+    # payload = {k: v for k, v in payload.items() if v is not None} # remove None values
+    # return await _make_marzban_request("PUT", f"user/{username}", json_data=payload)
+    raise NotImplementedError("General user modification not implemented yet.")
