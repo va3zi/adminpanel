@@ -98,7 +98,7 @@ check_dependencies() {
 }
 
 setup_database() {
-    _header "Setting up PostgreSQL Database via Docker"
+    _header "Setting up MariaDB (MySQL) Database via Docker"
 
     # Securely ask for DB password
     read -sp "Please enter a strong password for the database user '$DB_USER': " DB_PASSWORD
@@ -106,43 +106,33 @@ setup_database() {
     if [ -z "$DB_PASSWORD" ]; then
         _error "Database password cannot be empty."
     fi
+    read -sp "Please enter the root password for the new MariaDB instance: " DB_ROOT_PASSWORD
+    echo
+    if [ -z "$DB_ROOT_PASSWORD" ]; then
+        _error "MariaDB root password cannot be empty."
+    fi
 
-    echo "Pulling latest PostgreSQL Docker image..."
-    docker pull postgres:15-alpine || _error "Failed to pull PostgreSQL image."
+    echo "Pulling latest MariaDB Docker image..."
+    docker pull mariadb:latest || _error "Failed to pull MariaDB image."
 
     echo "Stopping and removing any existing container named '$DB_CONTAINER_NAME'..."
     docker stop "$DB_CONTAINER_NAME" > /dev/null 2>&1
     docker rm "$DB_CONTAINER_NAME" > /dev/null 2>&1
 
-    echo "Starting new PostgreSQL container..."
+    echo "Starting new MariaDB container..."
     docker run --name "$DB_CONTAINER_NAME" \
-        -e POSTGRES_PASSWORD="$DB_PASSWORD" \
-        -v "$PROJECT_DIR/postgres-data:/var/lib/postgresql/data" \
-        --network=host \
-        -d postgres:15-alpine || _error "Failed to start PostgreSQL container."
-
-    # The --network=host makes the container's ports directly accessible on the host,
-    # simplifying the backend connection to localhost:5432.
+        -e MARIADB_ROOT_PASSWORD="$DB_ROOT_PASSWORD" \
+        -e MARIADB_DATABASE="$DB_NAME" \
+        -e MARIADB_USER="$DB_USER" \
+        -e MARIADB_PASSWORD="$DB_PASSWORD" \
+        -v "$PROJECT_DIR/mysql-data:/var/lib/mysql" \
+        -p 3306:3306 \
+        -d mariadb:latest || _error "Failed to start MariaDB container."
 
     echo "Waiting for database to initialize..."
-    sleep 15
+    sleep 20
 
-    echo "Creating database '$DB_NAME' and user '$DB_USER'..."
-    # Note: The initial user created by POSTGRES_USER (default 'postgres') is a superuser.
-    # We use this user to create our specific, non-superuser for the app.
-    # However, the env var POSTGRES_PASSWORD sets the password for the 'postgres' user.
-    # For simplicity here, we will connect as the 'postgres' user from the backend.
-    # The script will use the provided DB_PASSWORD for the 'postgres' user.
-    # A more complex setup would create a less-privileged user.
-
-    docker exec -u postgres "$DB_CONTAINER_NAME" psql -c "CREATE DATABASE $DB_NAME;" || echo "Database $DB_NAME might already exist. Continuing."
-
-    # In this simplified setup, the backend will connect using the main 'postgres' user
-    # with the password set by POSTGRES_PASSWORD. This is sufficient for many use cases.
-    # The DB_USER and DB_NAME variables will be used to construct the connection string.
-    # For clarity, we will use the password provided for the postgres user.
-
-    echo "Database setup complete."
+    echo "Database setup complete. MariaDB is running."
 }
 
 
@@ -160,11 +150,9 @@ setup_backend() {
     deactivate
 
     echo "Creating .env file..."
-    # Note: Using the 'postgres' user with the password provided for the DB.
-    # The DB_USER variable is just for naming the database itself.
     cat > .env << EOF
 # Database Configuration
-DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@localhost:5432/${DB_NAME}
+DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:3306/${DB_NAME}
 
 # JWT Settings
 SECRET_KEY=$(openssl rand -hex 32)
