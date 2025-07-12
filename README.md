@@ -49,11 +49,10 @@ The `install.sh` script will:
 1.  SSH into your fresh Debian-based server as root.
 2.  Download and run the script:
     ```bash
-    wget https://raw.githubusercontent.com/Gozargah/Marzban-panel/master/install.sh
+    wget https://raw.githubusercontent.com/va3zi/adminpanel/master/install.sh
     chmod +x install.sh
     sudo bash ./install.sh
     ```
-    *(Note: The URL should be updated to the correct raw script URL upon final merge).*
 2.  Follow the on-screen prompts to provide your domain name, passwords, and API keys.
 
 ### Manual Installation
