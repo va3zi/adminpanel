@@ -1,0 +1,8 @@
+-r requirements.txt
+
+# Testing
+pytest
+pytest-asyncio
+httpx # Also used by the app, but good to have here for test client
+respx # For mocking httpx requests
+pytest-cov # For checking test coverage

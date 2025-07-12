@@ -129,8 +129,5 @@ def delete_admin(
     return db_admin # Or return {"message": "Admin deleted successfully"}
 
 
-# TODO: Add endpoint for SuperAdmin to change an Admin's password if necessary.
-# This requires careful consideration of security implications.
-# Example:
-# @router.put("/{admin_id}/change-password")
-# def change_admin_password(...): ...
+# Note: Changing an admin's password should be handled by a separate, dedicated endpoint
+# for security reasons, which is not implemented in this version.

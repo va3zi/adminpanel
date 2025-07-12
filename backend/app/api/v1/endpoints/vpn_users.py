@@ -238,10 +238,8 @@ async def get_vpn_user_subscription_info(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred with Marzban service: {str(e)}")
 
-# TODO:
-# - Consider an endpoint to "sync" a user's status/usage from Marzban to our local DB.
-# - Endpoint for Admin to modify a user in our panel (e.g., change plan, notes, is_active).
-#   This would then also need to propagate relevant changes to Marzban (e.g., if plan change affects data_limit/expiry).
-#   The current VpnUserUpdate schema is basic.
-# - Add `cascade` options to ForeignKey relationships in models.VpnUser if needed,
-#   e.g., what happens if a Plan is deleted? (Currently, ForeignKey constraint would prevent plan deletion if users are linked).
+# Future Development Notes:
+# - Consider an endpoint to "sync" a user's status/usage from Marzban to our local DB on demand.
+# - A full "modify user" endpoint would require more complex logic to propagate changes to Marzban.
+# - The behavior on deleting a Plan that is in use by VpnUsers is currently protected by DB foreign key constraints.
+#   A soft-delete (deactivating the plan) would be a more robust implementation.

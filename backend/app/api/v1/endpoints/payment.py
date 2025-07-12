@@ -7,8 +7,11 @@ from .... import schemas, models
 from ....database import get_db
 from ....security import get_current_admin
 from ....services import zarinpal_service
+import os
 
 router = APIRouter()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
 
 @router.post("/admin/payments/request", response_model=schemas.PaymentRequestResponse)
 async def request_payment_url(
@@ -67,13 +70,12 @@ async def handle_zarinpal_callback(
     if not payment_log:
         # This could happen if the authority is invalid or already processed.
         # Redirect to a failure page on the frontend.
-        # TODO: The frontend URL should be configurable.
-        return RedirectResponse(url="http://localhost:8080/payment/failed?error=transaction_not_found")
+        return RedirectResponse(url=f"{FRONTEND_URL}/payment/failed?error=transaction_not_found")
 
     if Status != 'OK':
         payment_log.status = 'failed'
         db.commit()
-        return RedirectResponse(url="http://localhost:8080/payment/failed?error=payment_cancelled")
+        return RedirectResponse(url=f"{FRONTEND_URL}/payment/failed?error=payment_cancelled")
 
     try:
         # Verify the payment with Zarinpal
@@ -95,18 +97,18 @@ async def handle_zarinpal_callback(
         db.commit()
 
         # Redirect to success page on frontend
-        return RedirectResponse(url=f"http://localhost:8080/payment/success?ref_id={ref_id}")
+        return RedirectResponse(url=f"{FRONTEND_URL}/payment/success?ref_id={ref_id}")
 
     except zarinpal_service.ZarinpalError as e:
         payment_log.status = 'failed'
         db.commit()
         print(f"Zarinpal verification error: {e.message}")
-        return RedirectResponse(url=f"http://localhost:8080/payment/failed?error=verification_failed&code={e.code}")
+        return RedirectResponse(url=f"{FRONTEND_URL}/payment/failed?error=verification_failed&code={e.code}")
     except Exception as e:
         payment_log.status = 'failed'
         db.commit()
         print(f"Internal error during callback handling: {str(e)}")
-        return RedirectResponse(url="http://localhost:8080/payment/failed?error=internal_error")
+        return RedirectResponse(url=f"{FRONTEND_URL}/payment/failed?error=internal_error")
 
 
 @router.get("/admin/payments/logs", response_model=List[schemas.PaymentLog])

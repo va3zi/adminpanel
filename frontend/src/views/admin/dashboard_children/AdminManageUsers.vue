@@ -8,10 +8,11 @@
     <div v-if="loadingUsers" class="loading-indicator">در حال بارگذاری کاربران...</div>
     <div v-if="usersError" class="error-message">{{ usersError }}</div>
 
-    <table v-if="!loadingUsers && vpnUsers.length > 0" class="styled-table">
-      <thead>
-        <tr>
-          <th>نام کاربری (Marzban)</th>
+    <div class="table-container">
+      <table v-if="!loadingUsers && vpnUsers.length > 0" class="styled-table">
+        <thead>
+          <tr>
+            <th>نام کاربری (Marzban)</th>
           <th>پلن</th>
           <th>تاریخ انقضا</th>
           <th>وضعیت پنل</th>
@@ -47,6 +48,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
      <p v-if="!loadingUsers && vpnUsers.length === 0 && !usersError" class="empty-state">
       هنوز هیچ کاربر VPN ایجاد نکرده‌اید.
     </p>
@@ -429,5 +431,36 @@ export default {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .styled-table {
+    font-size: 0.85em; /* Smaller font on mobile */
+  }
+
+  .styled-table th,
+  .styled-table td {
+    padding: 8px 10px;
+  }
+
+  .btn-sm {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  .btn-sm:last-child {
+    margin-bottom: 0;
+  }
 }
 </style>

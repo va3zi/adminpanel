@@ -112,11 +112,6 @@ const actions = {
     // Add similar logic for 'admin' role when implemented
   }
 
-  // TODO: Add Admin login/logout/fetchMe actions when that part is built
-  /*
-  async loginAdmin({ commit, dispatch }, credentials) { ... }
-  async fetchAdminMe({ commit, state }, tokenToUse) { ... }
-  */
 };
 
 export default {

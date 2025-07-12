@@ -8,10 +8,11 @@
     <div v-if="loading" class="loading-indicator">در حال بارگذاری اطلاعات ادمین‌ها...</div>
     <div v-if="error" class="error-message">{{ error }}</div>
 
-    <table v-if="!loading && admins.length > 0" class="styled-table">
-      <thead>
-        <tr>
-          <th>شناسه</th>
+    <div class="table-container">
+      <table v-if="!loading && admins.length > 0" class="styled-table">
+        <thead>
+          <tr>
+            <th>شناسه</th>
           <th>نام کاربری</th>
           <th>ایمیل</th>
           <th>موجودی (تومان)</th>
@@ -39,6 +40,7 @@
         </tr>
       </tbody>
     </table>
+    </div>
     <p v-if="!loading && admins.length === 0 && !error" class="empty-state">
       هیچ ادمینی برای نمایش وجود ندارد.
     </p>
@@ -455,4 +457,34 @@ export default {
   margin-top: 25px;
 }
 
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .styled-table {
+    font-size: 0.85em; /* Smaller font on mobile */
+  }
+
+  .styled-table th,
+  .styled-table td {
+    padding: 8px 10px;
+  }
+
+  .btn-sm {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  .btn-sm:last-child {
+    margin-bottom: 0;
+  }
+}
 </style>
