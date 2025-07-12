@@ -1,35 +1,4 @@
-import axios from 'axios';
-import store from '../../store'; // Adjusted path to root store
-
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
-
-// Function to get the auth headers for the currently logged-in user (admin or superadmin)
-const getAuthHeaders = () => {
-  const token = store.getters['auth/token'];
-  if (token) {
-    return { Authorization: `Bearer ${token}` };
-  }
-  return {};
-};
-
-// Create an apiClient instance.
-// If you have a global one, you might not need this, but for modularity:
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Add a request interceptor to include the token dynamically
-apiClient.interceptors.request.use(config => {
-  const headers = getAuthHeaders();
-  // Ensure the prefix for admin routes is /admin
-  // This service is for /admin/... routes, so the base URL should be sufficient if it points to /api/v1
-  // The specific endpoints like /admin/vpnusers will be appended.
-  config.headers = { ...config.headers, ...headers };
-  return config;
-}, error => {
-  return Promise.reject(error);
-});
-
+import apiClient from './apiClient';
 
 export default {
   // VPN User Management by Admin

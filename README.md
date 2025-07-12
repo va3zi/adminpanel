@@ -28,7 +28,37 @@ This project is a comprehensive, modern, responsive, RTL, and Persian-language V
 *   **Key Python Libraries:** Uvicorn, Pydantic, Passlib, Python-JOSE
 *   **Key Frontend Libraries:** Vue, Vuex, Vue-Router, Axios
 
-## Prerequisites
+## Installation
+
+There are two methods to install the VPN Admin Panel:
+
+1.  **Automatic Installation (Recommended):** A script is provided to automate the setup on a fresh Debian-based (e.g., Ubuntu 22.04) server.
+2.  **Manual Installation:** For custom setups or non-Debian systems, follow the manual steps.
+
+### Automatic Installation
+
+The `install.sh` script will:
+- Install all required dependencies (Docker, Nginx, Python, Node.js).
+- Set up a PostgreSQL database in a Docker container.
+- Configure and build the backend and frontend.
+- Set up Nginx as a reverse proxy with a free SSL certificate from Let's Encrypt.
+- Create a `systemd` service to run the backend automatically.
+
+**To run the automatic installer:**
+
+1.  SSH into your fresh Debian-based server as root.
+2.  Download and run the script:
+    ```bash
+    wget https://raw.githubusercontent.com/Gozargah/Marzban-panel/master/install.sh
+    chmod +x install.sh
+    sudo bash ./install.sh
+    ```
+    *(Note: The URL should be updated to the correct raw script URL upon final merge).*
+2.  Follow the on-screen prompts to provide your domain name, passwords, and API keys.
+
+### Manual Installation
+
+#### Prerequisites
 
 Before you begin, ensure you have the following installed:
 

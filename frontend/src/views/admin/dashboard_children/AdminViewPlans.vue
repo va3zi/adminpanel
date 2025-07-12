@@ -23,10 +23,7 @@
 </template>
 
 <script>
-import axios from 'axios'; // Using axios directly for now, can be moved to a service
-import store from '../../../store'; // To get auth headers
-
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
+import adminService from '../../../services/adminService';
 
 export default {
   name: 'AdminViewPlans',
@@ -42,8 +39,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const headers = store.getters['auth/authHeaders'];
-        const response = await axios.get(`${API_BASE_URL}/admin/plans`, { headers });
+        const response = await adminService.getActivePlans();
         this.plans = response.data;
       } catch (err) {
         this.error = 'خطا در دریافت لیست پلن‌ها: ' + (err.response?.data?.detail || err.message);
