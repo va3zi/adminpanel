@@ -109,17 +109,24 @@ class VpnUser(Base):
     owner_admin = relationship("Admin", back_populates="vpn_users")
     plan = relationship("Plan") # No back_populates needed if Plan doesn't need to list VpnUsers directly often
 
-# class PaymentLog(Base):
-#     __tablename__ = "payment_logs"
-#     id = Column(Integer, primary_key=True, index=True)
-#     admin_id = Column(Integer, ForeignKey("admins.id"))
-#     amount = Column(Float, nullable=False)
-#     transaction_id = Column(String, unique=True, index=True) # Zarinpal transaction ID
-#     status = Column(String) # e.g., 'pending', 'completed', 'failed'
-#     created_at = Column(DateTime(timezone=True), server_default=func.now())
-#     verified_at = Column(DateTime(timezone=True), nullable=True)
-#
-#     admin = relationship("Admin", back_populates="payment_logs")
+class PaymentLog(Base):
+    __tablename__ = "payment_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("admins.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+
+    # Zarinpal's 'Authority' token, which is the transaction identifier before verification
+    authority = Column(String, unique=True, index=True, nullable=False)
+
+    # Zarinpal's final reference ID after successful verification
+    ref_id = Column(String, unique=True, index=True, nullable=True)
+
+    status = Column(String, default='pending', nullable=False) # e.g., 'pending', 'completed', 'failed'
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    verified_at = Column(DateTime(timezone=True), nullable=True) # Timestamp of successful verification
+
+    admin = relationship("Admin", back_populates="payment_logs")
 
 # To create tables in the database, you'd typically use Alembic or a similar migration tool,
 # or for simple cases: Base.metadata.create_all(bind=engine)

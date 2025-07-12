@@ -69,8 +69,6 @@ async def create_vpn_user(
     db.commit()
     db.refresh(db_vpn_user)
 
-    # (Future: Sync with Abresani API)
-
     return db_vpn_user
 
 

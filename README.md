@@ -108,10 +108,11 @@ Before you begin, ensure you have the following installed:
             *   Format: `postgresql://vpnadmin_user:your_strong_password_here@localhost:5432/vpnadmin_db`
             *   Adjust `localhost`, `5432` (port), username, password, and database name as per your setup.
         *   `SECRET_KEY`: **Important!** Generate a strong secret key for JWT. You can use `openssl rand -hex 32` to generate one.
-        *   `ALGORITHM`: Default is `HS256`.
-        *   `ACCESS_TOKEN_EXPIRE_MINUTES`: Default is `30`.
+        *   `MARZBAN_API_BASE_URL`: The base URL for the live Marzban instance. For this project, it is `https://panel.abresani.com`.
+        *   `MARZBAN_SUDO_USERNAME`: The admin username for the Marzban (Abresani) panel.
+        *   `MARZBAN_SUDO_PASSWORD`: The admin password for the Marzban (Abresani) panel.
         *   `INITIAL_SUPER_ADMIN_USERNAME`, `INITIAL_SUPER_ADMIN_EMAIL`, `INITIAL_SUPER_ADMIN_PASSWORD`:
-            Set these to create the first Super Admin user on application startup if it doesn't exist.
+            Credentials for the first Super Admin of *this* panel, created on application startup if it doesn't exist.
             **Change the default password immediately!**
 
 7.  **Database Migrations/Table Creation:**
@@ -180,13 +181,14 @@ Before you begin, ensure you have the following installed:
 
 *   `DATABASE_URL`: (Required) PostgreSQL connection string.
 *   `SECRET_KEY`: (Required) Strong secret key for JWT.
+*   `MARZBAN_API_BASE_URL`: (Required) The base URL for the live Marzban instance (e.g., `https://panel.abresani.com`).
+*   `MARZBAN_SUDO_USERNAME`: (Required) Admin username for the Marzban panel.
+*   `MARZBAN_SUDO_PASSWORD`: (Required) Admin password for the Marzban panel.
 *   `ALGORITHM`: (Optional) JWT algorithm (default: `HS256`).
 *   `ACCESS_TOKEN_EXPIRE_MINUTES`: (Optional) JWT expiry time (default: `30`).
-*   `INITIAL_SUPER_ADMIN_USERNAME`: (Optional) Username for the first super admin (default: `superadmin`).
-*   `INITIAL_SUPER_ADMIN_EMAIL`: (Optional) Email for the first super admin (default: `superadmin@example.com`).
-*   `INITIAL_SUPER_ADMIN_PASSWORD`: (Optional) Password for the first super admin (default: `ChangeMeSuperSecure!123` - **CHANGE THIS!**).
-*   `MARZBAN_API_BASE_URL`, `MARZBAN_ADMIN_USERNAME`, `MARZBAN_ADMIN_PASSWORD`: (For future Marzban integration)
-*   `ABRESANI_API_KEY`, `ABRESANI_API_BASE_URL`: (For future Abresani integration)
+*   `INITIAL_SUPER_ADMIN_USERNAME`: (Optional) Username for the first super admin of this panel (default: `superadmin`).
+*   `INITIAL_SUPER_ADMIN_EMAIL`: (Optional) Email for the first super admin of this panel (default: `superadmin@example.com`).
+*   `INITIAL_SUPER_ADMIN_PASSWORD`: (Optional) Password for the first super admin of this panel (default: `ChangeMeSuperSecure!123` - **CHANGE THIS!**).
 *   `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, etc.: (For future Zarinpal integration)
 
 ### Frontend (`frontend/.env`)

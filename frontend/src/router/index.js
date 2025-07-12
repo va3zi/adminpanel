@@ -21,6 +21,8 @@ import AdminRecharge from '../views/admin/dashboard_children/AdminRecharge.vue';
 
 // General Views
 import NotFoundView from '../views/NotFoundView.vue';
+import PaymentSuccess from '../views/payment/PaymentSuccess.vue';
+import PaymentFailed from '../views/payment/PaymentFailed.vue';
 
 
 const routes = [
@@ -128,9 +130,21 @@ const routes = [
   },
   // Add a catch-all route for 404
   {
+    path: '/payment/success',
+    name: 'PaymentSuccess',
+    component: PaymentSuccess,
+    // This route should be public but might benefit from requiresAuth if we want to show user-specific success messages
+    // For now, keeping it simple. The backend has already updated the balance.
+  },
+  {
+    path: '/payment/failed',
+    name: 'PaymentFailed',
+    component: PaymentFailed,
+  },
+  {
     path: '/:catchAll(.*)*',
     name: 'NotFound',
-    component: () => import('../views/NotFoundView.vue') // Create this simple view
+    component: NotFoundView
   }
 ]
 

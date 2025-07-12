@@ -136,3 +136,28 @@ class MarzbanUserDetail(BaseModel):
 
 class VpnUserWithMarzbanDetails(VpnUser): # Extend VpnUser with Marzban live details
     marzban_details: Optional[MarzbanUserDetail] = None
+
+
+# --------------- PaymentLog Schemas ---------------
+class PaymentLogBase(BaseModel):
+    amount: float
+    status: str
+    authority: str
+    ref_id: Optional[str] = None
+
+class PaymentLog(PaymentLogBase): # Schema for returning a PaymentLog
+    id: int
+    admin_id: int
+    created_at: datetime
+    verified_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+# Schema for Admin to request a payment
+class PaymentRequest(BaseModel):
+    amount: float # In IRR (Toman)
+
+# Schema for the response to a payment request
+class PaymentRequestResponse(BaseModel):
+    payment_url: str

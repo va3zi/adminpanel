@@ -63,5 +63,10 @@ export default {
   // Plans (Admin viewing active plans)
   getActivePlans() {
     return apiClient.get('/admin/plans');
+  },
+
+  // Payment
+  requestPayment(amount) {
+    return apiClient.post('/admin/payments/request', { amount });
   }
 };
