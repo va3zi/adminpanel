@@ -70,7 +70,7 @@ clone_project() {
         git pull || _error "Failed to pull latest changes from git."
     else
         echo "Cloning repository into $PROJECT_DIR..."
-        git clone https://github.com/Gozargah/Marzban-panel.git "$PROJECT_DIR" || _error "Failed to clone repository."
+        git clone https://github.com/va3zi/adminpanel.git "$PROJECT_DIR" || _error "Failed to clone repository."
     fi
 }
 
